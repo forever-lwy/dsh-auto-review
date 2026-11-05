@@ -1,0 +1,7 @@
+# One root row. The Host half registers the access projection, the /access
+# command, the per-call gate (tools/pre-execute) and the reviewer answerer
+# (approval/request). Its id is also the settings namespace edited in
+# Settings → 自动审查; every field is volatile and applies without a restart.
+- insert:
+    - id: access-review
+      name: dsh-auto-review
