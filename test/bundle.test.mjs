@@ -35,3 +35,14 @@ test('every Config field is volatile and defaults match the policy defaults', ()
   assert.deepEqual(Plugin.readSettings(resolved), Plugin.readSettings({}))
   assert.throws(() => Plugin.Config({ defaultSandbox: 'everything' }))
 })
+
+test('the Host half imports only packages installed plugins already load from the running DSH', async () => {
+  const files = ['index.js', 'policy.js', 'reviewer.js', 'remote.js']
+  const specifiers = new Set()
+  for (const file of files) {
+    const text = await readFile(new URL(`../lib/${file}`, import.meta.url), 'utf8')
+    for (const match of text.matchAll(/^import (?!type)[^;]*?from ['"]([^'"]+)['"]/gm)) if (!match[1].startsWith('.')) specifiers.add(match[1])
+  }
+  assert.deepEqual([...specifiers].sort(), ['@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol', '@deepseek-ai/dsh-typert-protocol/remote-info', '@deepseek-ai/schemastery', 'zod'])
+  assert.deepEqual(Object.keys(packageJson.peerDependencies).sort(), ['@deepseek-ai/cordis', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol'])
+})

@@ -28,9 +28,7 @@ import type {} from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-user-approval'
 import type {} from '@deepseek-ai/dsh-permission-presets'
-import { CommandDefinitionId } from '@deepseek-ai/dsh-commands/brand'
-import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
+import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import z from '@deepseek-ai/schemastery'
 import { z as zod } from 'zod'
@@ -130,6 +128,18 @@ const APPROVAL_ALIASES: Record<string, ApprovalMode> = {
 }
 
 /** Parse `/access` arguments: any order, any subset. */
+/**
+ * The two knob write paths, inlined (their rc.5 implementations are exactly
+ * one append each) so the Host half only imports packages other installed
+ * plugins already load from the running DSH.
+ */
+function setSandboxMode(session: { append(type: string, data: unknown): unknown }, mode: SandboxMode): void {
+  session.append('sandbox/mode', { mode })
+}
+function setApprovalPolicy(session: { append(type: string, data: unknown): unknown }, policy: 'ask' | 'never'): void {
+  session.append('approval/policy', { policy })
+}
+
 export function parseAccessArgs(raw: string): { sandbox?: SandboxMode; approval?: ApprovalMode; unknown: string[] } {
   const result: { sandbox?: SandboxMode; approval?: ApprovalMode; unknown: string[] } = { unknown: [] }
   for (const token of raw.trim().toLowerCase().split(/[\s,，/+·]+/).filter(Boolean)) {
@@ -222,7 +232,7 @@ export function apply(ctx: Context, config: Record<string, unknown> = {}, intern
     const session = agent.session
     const state = stateOf(session)
     const view = deriveAccess(state, defaults())
-    if (sandbox !== view.sandbox) setSandboxMode(session as never, sandbox)
+    if (sandbox !== view.sandbox) setSandboxMode(session, sandbox)
     if (approval !== view.approval || view.builtinAuto) session.append('permission/preset', { preset: markerOf(approval) })
     const policy = policyFor(approval)
     if (policy !== (state.policy ?? defaults().policy)) c.approval.setPolicy(agent, policy)
@@ -237,9 +247,9 @@ export function apply(ctx: Context, config: Record<string, unknown> = {}, intern
     if (!isFresh(state)) return
     const wanted = settings()
     try {
-      if (wanted.defaultSandbox !== (state.sandbox ?? defaults().sandbox)) setSandboxMode(session as never, wanted.defaultSandbox)
+      if (wanted.defaultSandbox !== (state.sandbox ?? defaults().sandbox)) setSandboxMode(session, wanted.defaultSandbox)
       const policy = policyFor(wanted.defaultApproval)
-      if (policy !== (state.policy ?? defaults().policy)) setApprovalPolicy(session as never, policy)
+      if (policy !== (state.policy ?? defaults().policy)) setApprovalPolicy(session, policy)
       session.append('permission/preset', { preset: markerOf(wanted.defaultApproval) })
     } catch (error) {
       ctx.logger.warn('access-review: could not apply new-session defaults: %s', errorText(error))
@@ -387,7 +397,7 @@ export function apply(ctx: Context, config: Record<string, unknown> = {}, intern
   // `/access [sandbox] [approval]`: the composer control's write path, also typed by hand.
   ctx.inject(['commands'], (scoped: Context) => {
     scoped.effect(() => (scoped as any).commands.register({
-      definitionId: CommandDefinitionId('dsh-auto-review'),
+      definitionId: 'dsh-auto-review',
       name: 'access',
       description: 'Switch the sandbox (read-only / workspace-write / full) and the approval mode (ask / model / never) independently',
       input: { hint: '<read-only|workspace-write|full> <ask|model|never>' },
