@@ -1,6 +1,6 @@
 {
   "name": "dsh-auto-review",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Codex-style access control for DeepSeek Harness rc.5: pick a sandbox (read-only / workspace-write / full access) and, independently, how requests are approved (ask you each time / a reviewer model you choose / never ask)",
   "type": "module",
   "main": "lib/index.js",

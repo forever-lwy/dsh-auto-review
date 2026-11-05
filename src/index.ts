@@ -161,7 +161,8 @@ export class AccessReviewService extends TypertRemoteService {
   }
 
   @Remote
-  async models(_request: unknown, signal: AbortSignal): Promise<ReviewerModels> {
+  async models(request: unknown, signal: AbortSignal): Promise<ReviewerModels> {
+    void request // the gateway matches wire fields to these parameter names; keep it "request"
     const llm = (this.ctx as any).llm
     const providers = (llm.listProviders?.() ?? []) as { id: string; name: string }[]
     return {

@@ -46,3 +46,22 @@ test('the Host half imports only packages installed plugins already load from th
   assert.deepEqual([...specifiers].sort(), ['@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol', '@deepseek-ai/dsh-typert-protocol/remote-info', '@deepseek-ai/schemastery', 'zod'])
   assert.deepEqual(Object.keys(packageJson.peerDependencies).sort(), ['@deepseek-ai/cordis', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol'])
 })
+
+test('every Remote method declares the parameter names the browser sends', async () => {
+  // rc.5's gateway reads parameter names from the method source and requires
+  // the wire fields to match them exactly (a "_request" here broke 0.1.0).
+  const { remoteInfo } = await import('../lib/remote.js')
+  const sourceParameters = fn => {
+    const source = Function.prototype.toString.call(fn)
+    return source.slice(source.indexOf('(') + 1, source.indexOf(')')).split(',').map(part => part.trim()).filter(Boolean)
+  }
+  const methods = Object.entries(remoteInfo.methods)
+  assert.ok(methods.length >= 2)
+  for (const [key, method] of methods) {
+    const name = key.split('/')[1]
+    const implementation = Plugin.AccessReviewService.prototype[name]
+    assert.equal(typeof implementation, 'function', key)
+    const wire = [...method.parameters.map(parameter => parameter.wire), method.cancellation.parameter]
+    assert.deepEqual(sourceParameters(implementation), wire, key)
+  }
+})
