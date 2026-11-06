@@ -7,9 +7,11 @@ import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import { SessionStore, SessionId } from '@deepseek-ai/dsh-session'
 import { SessionProjectionRegistry } from '@deepseek-ai/dsh-session-projection'
+import { AgentRegistry } from '@deepseek-ai/dsh-agent'
 import { LlmAdapter, LlmRuntime, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SystemPrompt } from '@deepseek-ai/dsh-system-prompt'
 import { ToolRuntime, defineTool } from '@deepseek-ai/dsh-tools'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { ApprovalService } from '@deepseek-ai/dsh-user-approval'
 import { PermissionPresetService } from '@deepseek-ai/dsh-permission-presets'
 import { approveEscalation } from '@deepseek-ai/dsh-sandbox'
@@ -39,7 +41,7 @@ async function setup({ config = {}, script = [], sandboxDefault = 'workspace-wri
   })
   ctx.provide('shell')
   ctx.set('shell', { sandboxMode: sandboxDefault })
-  for (const service of [SessionStore, SessionProjectionRegistry, LlmRuntime, SystemPrompt, ToolRuntime, CommandRuntime]) await ctx.plugin(service)
+  for (const service of [SessionStore, SessionProjectionRegistry, AgentRegistry, LlmRuntime, SystemPrompt, ToolRuntime, NativeToolExecutor, CommandRuntime]) await ctx.plugin(service)
   // The real command registry, read through the same lookup the executor uses.
   const probe = { id: 'probe', session: undefined }
   const commands = {
@@ -80,8 +82,9 @@ async function setup({ config = {}, script = [], sandboxDefault = 'workspace-wri
     },
   }))
 
-  const fiber = ctx.plugin(Plugin, { reviewerProvider: 'reviewer', reviewerModel: 'judge', ...config })
-  await fiber
+  // 0.2.2: apply awaits its projection registration; wait until the plugin is active.
+  const fiber = await ctx.plugin(Plugin, { reviewerProvider: 'reviewer', reviewerModel: 'judge', ...config })
+  await fiber.await()
   return { ctx, adapter, asked, user, ran, commands, fiber }
 }
 
@@ -92,6 +95,8 @@ function liveSession(ctx, { request = 'please clean the build folder' } = {}) {
   const session = ctx.sessions.create(SessionId(id), { meta: { cwd: '/work' } })
   const injected = []
   const agent = { id, session, inject: message => injected.push(message) }
+  // 0.2.2 pins permissions when the Agent is created (appends are rejected during session/created).
+  ctx.emit('agent/created', { agent, source: 'new' })
   session.append('turn/start', { turn: 1 })
   session.append('step/start', { turn: 1, step: 1 })
   session.append('user/message', createUserMessage({ content: [{ type: 'text', text: request }], source: { kind: 'user', rpcId: 'rpc-1' } }), { surfaceOp: 'append' })
@@ -103,7 +108,9 @@ function callTool(ctx, agent, name, command, callId = `call-${name}-${Math.rando
     turn: 1, step: 1, stream: [],
     message: createAssistantMessage({ content: [{ type: 'tool-call', id: callId, name, arguments: JSON.stringify({ command }) }], provider: 'p', model: 'm', stopReason: 'tool-calls' }),
   }, { surfaceOp: 'append' })
-  return ctx.tools.execute({ callId, name, arguments: { command }, agent, signal: new AbortController().signal })
+  // 0.2.2 executes batches through the selected executor; unconditional tools need no step set.
+  return ctx.tools.execute({ calls: [{ type: 'tool-call', id: callId, name, arguments: JSON.stringify({ command }) }], agent, signal: new AbortController().signal })
+    .then(batch => batch.results[0].result)
 }
 
 const view = (ctx, session) => ctx.sessionProjections.stateOf(session, Plugin.PROJECTION_KEY)
@@ -131,7 +138,7 @@ test('/access switches sandbox and approval independently and notifies the model
     run('never')
     assert.deepEqual(access(ctx, session), { sandbox: 'danger-full-access', approval: 'never', builtinAuto: false })
     assert.equal(injected.length, 1)
-    assert.match(injected[0].content[0].text, /"ask" to "never"/)
+    assert.match(injected[0].content[0].text, /"ask[^"]*" to "never[^"]*"/)
     assert.equal(ctx.permissionPresets.current(session), 'danger-full-access', 'matches the built-in preset again')
     run('ro ask')
     assert.deepEqual(access(ctx, session), { sandbox: 'read-only', approval: 'ask', builtinAuto: false })

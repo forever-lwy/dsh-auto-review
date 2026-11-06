@@ -7,9 +7,9 @@ import * as Plugin from '../lib/index.js'
 const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
 const patchFile = new URL('../cordis.patch.yml', import.meta.url).pathname
 
-test('package declares an installable rc.5 bundle with a browser build', async () => {
+test('package declares an installable ungated bundle with a browser build', async () => {
   assert.equal(packageJson.dsh.bundle.patch, './cordis.patch.yml')
-  assert.equal(packageJson.engines.dsh, '0.2.1-rc.5')
+  assert.equal(packageJson.engines.dsh, '*', 'never gate on the dsh version')
   assert.equal(packageJson.exports['./client'], './lib/client.js')
   assert.ok(packageJson.files.includes('lib') && packageJson.files.includes('cordis.patch.yml'))
   assert.equal(packageJson.scripts.prepare, 'npm run build')
@@ -44,7 +44,7 @@ test('the Host half imports only packages installed plugins already load from th
     for (const match of text.matchAll(/^import (?!type)[^;]*?from ['"]([^'"]+)['"]/gm)) if (!match[1].startsWith('.')) specifiers.add(match[1])
   }
   assert.deepEqual([...specifiers].sort(), ['@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol', '@deepseek-ai/dsh-typert-protocol/remote-info', '@deepseek-ai/schemastery', 'zod'])
-  assert.deepEqual(Object.keys(packageJson.peerDependencies).sort(), ['@deepseek-ai/cordis', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol'])
+  assert.deepEqual(Object.keys(packageJson.peerDependencies).sort(), ['@deepseek-ai/cordis', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-typert-protocol', '@deepseek-ai/schemastery'])
 })
 
 test('every Remote method declares the parameter names the browser sends', async () => {

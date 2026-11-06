@@ -197,7 +197,7 @@ export interface Internals {
   review?: (input: ReturnType<typeof buildInput>, settings: ReviewSettings, signal: AbortSignal) => Promise<Verdict>
 }
 
-export function apply(ctx: Context, config: Record<string, unknown> = {}, internals: Internals = {}): void {
+export async function apply(ctx: Context, config: Record<string, unknown> = {}, internals: Internals = {}): Promise<void> {
   const c = ctx as any
   const settings = () => readSettings(config)
   const defaults = (): KnobDefaults => ({
@@ -205,7 +205,9 @@ export function apply(ctx: Context, config: Record<string, unknown> = {}, intern
     policy: c.approval?.config?.policy === 'never' ? 'never' : 'ask',
   })
 
-  c.sessionProjections.register({
+  // 0.2.2 registration is asynchronous; its handle is the supported reader
+  // (the registry-level stateOf(session, key) is deprecated and untyped).
+  const accessProjection = await c.sessionProjections.register({
     key: PROJECTION_KEY,
     stateVersion: 1,
     stateSchema,
@@ -215,7 +217,7 @@ export function apply(ctx: Context, config: Record<string, unknown> = {}, intern
   })
 
   const stateOf = (session: SessionLike): AccessState =>
-    (c.sessionProjections.stateOf(session, PROJECTION_KEY) as AccessState | undefined) ?? EMPTY_STATE
+    (accessProjection.stateOf(session) as AccessState | undefined) ?? EMPTY_STATE
 
   /** Effective access; a delegated child without its own choice follows its parent's model review. */
   const accessOf = (session: SessionLike): AccessView => {
@@ -240,9 +242,11 @@ export function apply(ctx: Context, config: Record<string, unknown> = {}, intern
     return deriveAccess(stateOf(session), defaults())
   }
 
-  // New top-level sessions start with the configured defaults. Runs after the
-  // built-in preset service pinned its own default (it is injected first).
-  ctx.on('session/created' as never, ((session: AgentLike['session']) => {
+  // New top-level sessions start with the configured defaults. 0.2.2 rejects
+  // appends during session/created; the built-in preset service pins its
+  // default on agent/created (prepended), and this listener runs after it.
+  ctx.on('agent/created' as never, (({ agent }: { agent: AgentLike }) => {
+    const session = agent.session
     if (session.header.origin === 'subagent') return
     const state = stateOf(session)
     if (!isFresh(state)) return
