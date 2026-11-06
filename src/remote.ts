@@ -32,7 +32,7 @@ const method = (input: z.ZodType, output: z.ZodType) => ({
   result: codec(output, 'AccessReviewResult'), cancellation: { parameter: 'signal' as const },
 })
 
-export const remoteInfo = createTypertRemoteInfo({ package: 'dsh-auto-review', methods: {
+export const remoteInfo = createTypertRemoteInfo({ package: '@forever-lwy/dsh-auto-review', methods: {
   'accessReview/models': method(empty, modelsSchema),
   'accessReview/modelInfo': method(modelInfoRequestSchema, modelInfoSchema),
 } }, z)

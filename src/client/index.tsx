@@ -30,7 +30,7 @@ export const name = 'dsh-auto-review-client'
 export const inject = ['slots', 'locale', 'configForms', 'remote', 'sessions']
 
 /** npm package name: the key of this bundle's page on the Plugins page. */
-const PACKAGE = 'dsh-auto-review'
+const PACKAGE = '@forever-lwy/dsh-auto-review'
 /** Host row id from cordis.patch.yml, also its settings namespace. */
 export const ENTRY = 'access-review'
 /** Below the built-in registrations (default priority 0), so ours renders. */

@@ -84,6 +84,22 @@
 - 用内置 `/permission` 选中当前已生效的同名预设时不会写入新记录，“模型审批”会保留；请用本插件的按钮或 `/access` 切换。
 - 审批模型可能误放行或误拒绝，每次审查都会消耗额外 token。
 
+## 安装
+
+在 DSH「插件 → 添加插件」输入下面的来源，确认安装并启用：
+
+```text
+github:forever-lwy/dsh-auto-review
+```
+
+仓库默认分支是 `release`，其中每个提交都是某次发版的源码加上构建好的 `lib/`，并去掉了 `prepare`，所以安装时不装 devDependencies、不构建。dshmarket 按默认分支上 `package.json` 的版本号判断是否有更新，点击更新时安装 `release` 的最新提交。不要安装 `master`：它只有源码，安装时会靠 `prepare` 拉全部 devDependencies 现场构建。
+
+包名自 0.1.3 起为 `@forever-lwy/dsh-auto-review`，以免与 npm 和插件市场目录里的同名插件混淆。从旧的 `dsh-auto-review` 版本包迁移时，先卸载旧的 `dsh-auto-review`，再安装上面的来源；两者注册同一宿主行，不能同时安装。宿主行 id 和设置命名空间不变。
+
+设置保存在 profile `cordis.patch.yml` 的 `access-review` 行。迁移时若该行写有 `name: dsh-auto-review`，在卸载旧包后、安装新包前改成 `name: '@forever-lwy/dsh-auto-review'`，设置即保留；不改则会因名字不符被忽略。
+
+是否需要重启以安装界面提示为准。不要用 `link:`、目录依赖或模块路径把源码目录接入常用 profile。
+
 ## 开发
 
 ```sh
@@ -92,7 +108,8 @@ npm run check
 npm test        # 宿主：真实 SessionStore、ToolRuntime、ApprovalService、内置权限服务、LlmRuntime（脚本化审批模型适配器）
                 # 浏览器：真实 rc.5 slot 渲染器（jsdom），并加载同级目录中构建好的 dsh-appearance 验证不会被收进其按钮
 npm run build
-npm pack --pack-destination ../releases
 ```
+
+发版：在 `master` 上开发和推送不会触发任何构建。改完后递增 `package.json` 版本并提交，打同名标签并推送，例如 `git tag v0.1.3 && git push origin master v0.1.3`。GitHub Actions（`.github/workflows/release.yml`）只在 `v*` 标签推送时运行：检查标签与版本一致，按 lockfile `npm ci`，由 `scripts/release.mjs` 构建、测试，在 `release` 分支上追加一个发布提交（源码加 `lib/`，去掉 `prepare`；父提交是上一个发布提交和该标签的源码提交）并推送。`release` 已有同一或更高版本时会拒绝发版。`npm run release` 可在本地对已打标签的提交生成同样的发布提交（不推送）。
 
 MIT License

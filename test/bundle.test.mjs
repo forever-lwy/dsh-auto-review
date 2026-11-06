@@ -14,7 +14,7 @@ test('package declares an installable ungated bundle with a browser build', asyn
   assert.ok(packageJson.files.includes('lib') && packageJson.files.includes('cordis.patch.yml'))
   assert.equal(packageJson.scripts.prepare, 'npm run build')
   const client = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
-  assert.match(client, /^window\.__ModuleLoader__\.load\(\{id:"dsh-auto-review"/)
+  assert.match(client, /^window\.__ModuleLoader__\.load\(\{id:"@forever-lwy\/dsh-auto-review"/)
   // Only modules the Web client provides may be required by the browser half.
   assert.deepEqual([...new Set(client.match(/require\("[^"]+"\)/g))].sort(),
     ['require("@deepseek-ai/dsh-client-ui-primitives")', 'require("react")', 'require("react/jsx-runtime")', 'require("zod")'])
@@ -22,7 +22,7 @@ test('package declares an installable ungated bundle with a browser build', asyn
 
 test('one root row whose id is not the built-in auto-review row', () => {
   const rows = composeEntries([loadOverlayPatches('access-review-test', patchFile)])
-  assert.deepEqual(rows.map(row => [row.id, row.name]), [['access-review', 'dsh-auto-review']])
+  assert.deepEqual(rows.map(row => [row.id, row.name]), [['access-review', '@forever-lwy/dsh-auto-review']])
   assert.notEqual(rows[0].id, 'auto-review')
 })
 

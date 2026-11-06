@@ -101,10 +101,10 @@ const appearancePath = fileURLToPath(new URL('../../dsh-appearance/lib/client.js
 const withAppearance = existsSync(appearancePath)
 if (withAppearance) {
   loadBrowserModule(appearancePath)
-  await ctx.plugin(loaded['dsh-appearance'])
+  await ctx.plugin(loaded['@forever-lwy/dsh-appearance'])
 }
 loadBrowserModule(fileURLToPath(new URL('../lib/client.js', import.meta.url)))
-const client = loaded['dsh-auto-review']
+const client = loaded['@forever-lwy/dsh-auto-review']
 assert.deepEqual(client.inject, ['slots', 'locale', 'configForms', 'remote', 'sessions'])
 const fiber = ctx.plugin(client)
 await fiber

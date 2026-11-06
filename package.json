@@ -1,6 +1,6 @@
 {
-  "name": "dsh-auto-review",
-  "version": "0.1.2",
+  "name": "@forever-lwy/dsh-auto-review",
+  "version": "0.1.3",
   "description": "Codex-style access control for DeepSeek Harness: pick a sandbox (read-only / workspace-write / full access) and, independently, how requests are approved (ask you each time / a reviewer model you choose / never ask)",
   "type": "module",
   "main": "lib/index.js",
@@ -17,6 +17,10 @@
     "LICENSE"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forever-lwy/dsh-auto-review.git"
+  },
   "engines": {
     "node": ">=22.13",
     "dsh": "*"
@@ -25,7 +29,8 @@
     "build": "tsc -p tsconfig.json && node scripts/build-client.mjs",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "node --test --test-isolation=none test/*.test.mjs",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "zod": "4.4.3"
