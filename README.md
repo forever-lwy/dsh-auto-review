@@ -1,6 +1,6 @@
 # DSH 自动审查（权限与审批分离）
 
-适用于 **DeepSeek Harness**（当前在 `0.2.2-rc.1` 上构建测试，不按 dsh 版本拦截加载），用来替代 / 增强内置的实验性“自动审查”。参照 Codex 的做法，把两件事分开选：
+适用于 **DeepSeek Harness**（当前在 `0.2.2-rc.3` 上构建测试，不按 dsh 版本拦截加载），用来替代 / 增强内置的实验性“自动审查”。参照 Codex 的做法，把两件事分开选：
 
 | 维度 | 选项 | 含义 |
 | --- | --- | --- |
@@ -66,7 +66,7 @@
 
 ## 实现
 
-宿主部分只用 rc.5 现有的扩展点，不改内置插件：
+宿主部分只用 DSH 当前的扩展点，不改内置插件：
 
 - **权限**：官方 `sandbox/mode` 开关（`setSandboxMode`）。
 - **审批方式**：“每次问我”和“模型审批”的底层审批策略都是 `ask`，“从不审批”是 `never`，切换时通过官方 `approval.setPolicy` 通知模型。“模型审批”另外记成一条 `permission/preset` 选择，名称为 `dsh-auto-review:model`。这条事件只记录用户意图；内置权限服务把不认识的名称当作“未匹配预设”，仍按两个开关推导。之后用内置 `/permission` 切到某个预设，会覆盖这条记录。
@@ -113,3 +113,5 @@ npm run build
 发版：在 `master` 上开发和推送不会触发任何构建。改完后递增 `package.json` 版本并提交，打同名标签并推送，例如 `git tag v0.1.3 && git push origin master v0.1.3`。GitHub Actions（`.github/workflows/release.yml`）只在 `v*` 标签推送时运行：检查标签与版本一致，按 lockfile `npm ci`，由 `scripts/release.mjs` 构建、测试，在 `release` 分支上追加一个发布提交（源码加 `lib/`，去掉 `prepare`；父提交是上一个发布提交和该标签的源码提交）并推送。`release` 已有同一或更高版本时会拒绝发版。`npm run release` 可在本地对已打标签的提交生成同样的发布提交（不推送）。
 
 MIT License
+
+0.1.4 使用 DSH rc.3 的官方 Menu / RiskConfirmation 类型检查，移除旧占位声明；权限选择和审批策略沿用现有存储。

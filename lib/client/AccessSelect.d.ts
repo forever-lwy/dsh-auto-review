@@ -12,8 +12,8 @@ export interface Choice {
 }
 /** UI primitives supplied by the Web client (`@deepseek-ai/dsh-client-ui-primitives`). */
 export interface Primitives {
-    Menu: any;
-    RiskConfirmation: any;
+    Menu: typeof import('@deepseek-ai/dsh-client-ui-primitives').Menu;
+    RiskConfirmation: typeof import('@deepseek-ai/dsh-client-ui-primitives').RiskConfirmation;
     IconChevronDownOutlineRegular?: any;
     PermissionIconReadOnlyRegular?: any;
     PermissionIconWorkspaceWriteRegular?: any;

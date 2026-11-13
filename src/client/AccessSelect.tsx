@@ -19,8 +19,8 @@ export interface Choice { sandbox: SandboxMode; approval: ApprovalMode }
 
 /** UI primitives supplied by the Web client (`@deepseek-ai/dsh-client-ui-primitives`). */
 export interface Primitives {
-  Menu: any
-  RiskConfirmation: any
+  Menu: typeof import('@deepseek-ai/dsh-client-ui-primitives').Menu
+  RiskConfirmation: typeof import('@deepseek-ai/dsh-client-ui-primitives').RiskConfirmation
   IconChevronDownOutlineRegular?: any
   PermissionIconReadOnlyRegular?: any
   PermissionIconWorkspaceWriteRegular?: any
@@ -101,7 +101,7 @@ export function AccessSelect({ locked, useProjection, select, gateScope, ui, t }
     submit(next)
   }
 
-  const items = [
+  const items: import('@deepseek-ai/dsh-client-ui-primitives').MenuEntry[] = [
     { type: 'label', id: 'label:sandbox', text: t('group.sandbox') },
     ...SANDBOX_MODES.map(mode => ({ id: `sandbox:${mode}`, label: t(`sandbox.${mode}`), icon: glyph(ui, mode) })),
     { type: 'separator', id: 'separator' },
